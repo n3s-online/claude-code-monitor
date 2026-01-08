@@ -6,13 +6,22 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var overlayWindow: NSWindow!
     let sessionStore = SessionStore()
     var httpServer: HTTPServer?
+    var globalEventMonitor: Any?
+    var localEventMonitor: Any?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         setupOverlayWindow()
+        setupEventMonitor()
         startServer()
     }
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        if let monitor = globalEventMonitor {
+            NSEvent.removeMonitor(monitor)
+        }
+        if let monitor = localEventMonitor {
+            NSEvent.removeMonitor(monitor)
+        }
         Task {
             await httpServer?.stop()
             await MainActor.run {
@@ -76,5 +85,25 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         overlayWindow.contentView = visualEffectView
         overlayWindow.orderFront(nil)
+    }
+
+    private func setupEventMonitor() {
+        globalEventMonitor = NSEvent.addGlobalMonitorForEvents(matching: .flagsChanged) { [weak self] event in
+            self?.handleFlagsChanged(event)
+        }
+        localEventMonitor = NSEvent.addLocalMonitorForEvents(matching: .flagsChanged) { [weak self] event in
+            self?.handleFlagsChanged(event)
+            return event
+        }
+    }
+
+    private func handleFlagsChanged(_ event: NSEvent) {
+        let cmdPressed = event.modifierFlags.contains(.command)
+        overlayWindow.ignoresMouseEvents = !cmdPressed
+
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.15
+            overlayWindow.animator().alphaValue = cmdPressed ? 0.8 : 0.3
+        }
     }
 }

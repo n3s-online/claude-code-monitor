@@ -37,6 +37,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if let monitor = localEventMonitor {
             NSEvent.removeMonitor(monitor)
         }
+
+        // Schedule forced termination after 2 seconds as fallback on a background thread
+        // This ensures we exit even if graceful shutdown hangs (main run loop blocked)
+        DispatchQueue.global().async {
+            Thread.sleep(forTimeInterval: 2.0)
+            print("Forced termination after timeout")
+            Darwin.exit(0)
+        }
+
+        // Attempt graceful cleanup
         Task {
             await processMonitor?.stop()
             await httpServer?.stop()

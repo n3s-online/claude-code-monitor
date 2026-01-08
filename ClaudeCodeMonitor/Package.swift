@@ -19,7 +19,10 @@ let package = Package(
         ),
         .testTarget(
             name: "ClaudeCodeMonitorTests",
-            dependencies: ["ClaudeCodeMonitor"],
+            dependencies: [
+                "ClaudeCodeMonitor",
+                .product(name: "VaporTesting", package: "vapor")
+            ],
             path: "Tests/ClaudeCodeMonitorTests"
         )
     ]

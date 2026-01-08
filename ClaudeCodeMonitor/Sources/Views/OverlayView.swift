@@ -13,8 +13,6 @@ struct OverlayView: View {
                 }
             }
         }
-        .background(.ultraThinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 }
 

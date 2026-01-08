@@ -1,4 +1,5 @@
 import AppKit
+import SwiftUI
 
 @MainActor
 class AppDelegate: NSObject, NSApplicationDelegate {
@@ -59,7 +60,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         visualEffectView.blendingMode = .behindWindow
         visualEffectView.state = .active
         visualEffectView.wantsLayer = true
-        visualEffectView.layer?.cornerRadius = 12
+        visualEffectView.layer?.cornerRadius = 8
+
+        let overlayView = OverlayView(sessionStore: sessionStore)
+        let hostingView = NSHostingView(rootView: overlayView)
+        hostingView.translatesAutoresizingMaskIntoConstraints = false
+        visualEffectView.addSubview(hostingView)
+
+        NSLayoutConstraint.activate([
+            hostingView.topAnchor.constraint(equalTo: visualEffectView.topAnchor),
+            hostingView.leadingAnchor.constraint(equalTo: visualEffectView.leadingAnchor),
+            hostingView.trailingAnchor.constraint(equalTo: visualEffectView.trailingAnchor),
+            hostingView.bottomAnchor.constraint(equalTo: visualEffectView.bottomAnchor)
+        ])
 
         overlayWindow.contentView = visualEffectView
         overlayWindow.orderFront(nil)

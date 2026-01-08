@@ -3,9 +3,34 @@ import AppKit
 @MainActor
 class AppDelegate: NSObject, NSApplicationDelegate {
     var overlayWindow: NSWindow!
+    let sessionStore = SessionStore()
+    var httpServer: HTTPServer?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         setupOverlayWindow()
+        startServer()
+    }
+
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        Task {
+            await httpServer?.stop()
+            await MainActor.run {
+                NSApp.reply(toApplicationShouldTerminate: true)
+            }
+        }
+        return .terminateLater
+    }
+
+    private func startServer() {
+        httpServer = HTTPServer(sessionStore: sessionStore)
+        Task {
+            do {
+                try await httpServer?.start()
+                print("HTTP server started on port 7779")
+            } catch {
+                print("Failed to start HTTP server: \(error)")
+            }
+        }
     }
 
     private func setupOverlayWindow() {

@@ -5,14 +5,29 @@ import SwiftUI
 class AppDelegate: NSObject, NSApplicationDelegate {
     var overlayWindow: NSWindow!
     let sessionStore = SessionStore()
+    var processMonitor: ProcessMonitor?
     var httpServer: HTTPServer?
     var globalEventMonitor: Any?
     var localEventMonitor: Any?
+    var signalSource: DispatchSourceSignal?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         setupOverlayWindow()
         setupEventMonitor()
-        startServer()
+        startProcessMonitor()
+        startHTTPServer()
+        setupSignalHandler()
+    }
+
+    private func setupSignalHandler() {
+        signal(SIGINT, SIG_IGN)
+        signalSource = DispatchSource.makeSignalSource(signal: SIGINT, queue: .main)
+        signalSource?.setEventHandler { [weak self] in
+            print("\nReceived SIGINT, shutting down...")
+            self?.signalSource?.cancel()
+            NSApp.terminate(nil)
+        }
+        signalSource?.resume()
     }
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
@@ -23,6 +38,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             NSEvent.removeMonitor(monitor)
         }
         Task {
+            await processMonitor?.stop()
             await httpServer?.stop()
             await MainActor.run {
                 NSApp.reply(toApplicationShouldTerminate: true)
@@ -31,7 +47,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         return .terminateLater
     }
 
-    private func startServer() {
+    private func startProcessMonitor() {
+        processMonitor = ProcessMonitor(sessionStore: sessionStore)
+        Task {
+            await processMonitor?.start()
+            print("Process monitor started")
+        }
+    }
+
+    private func startHTTPServer() {
         httpServer = HTTPServer(sessionStore: sessionStore)
         Task {
             do {

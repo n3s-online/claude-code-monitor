@@ -5,7 +5,7 @@ struct SessionRowView: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            PulsingDotView()
+            PulsingDotView(state: session.state)
             Text(session.displayId)
                 .font(.system(.body, design: .monospaced))
             Text(session.displayDirectory)
@@ -20,13 +20,26 @@ struct SessionRowView: View {
 #if DEBUG
 struct SessionRowView_Previews: PreviewProvider {
     static var previews: some View {
-        SessionRowView(
-            session: Session(
-                id: "abc123def456",
-                workingDirectory: "/Users/demo/Projects/my-app",
-                startedAt: Date()
+        VStack {
+            SessionRowView(
+                session: Session(
+                    id: "abc123def456",
+                    workingDirectory: "/Users/demo/Projects/my-app",
+                    pid: 12345,
+                    state: .working,
+                    startedAt: Date()
+                )
             )
-        )
+            SessionRowView(
+                session: Session(
+                    id: "xyz789ghi012",
+                    workingDirectory: "/Users/demo/Projects/other-app",
+                    pid: 67890,
+                    state: .waiting,
+                    startedAt: Date()
+                )
+            )
+        }
         .padding()
     }
 }

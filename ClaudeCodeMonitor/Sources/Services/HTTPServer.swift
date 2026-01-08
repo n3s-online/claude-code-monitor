@@ -66,12 +66,18 @@ final class HTTPServer {
                 let session = Session(
                     id: event.sessionId,
                     workingDirectory: event.workingDirectory ?? "",
+                    pid: 0,  // HTTP events don't have PID, ProcessMonitor handles this
+                    state: .working,  // Default to working when session starts
                     startedAt: event.timestamp ?? Date()
                 )
                 await store.addSession(session)
 
             case .stop:
                 await store.removeSession(id: event.sessionId)
+
+            case .stateChange:
+                let newState: SessionState = event.state == .working ? .working : .waiting
+                await store.updateSessionState(id: event.sessionId, state: newState)
             }
 
             let response = Response(status: .ok)

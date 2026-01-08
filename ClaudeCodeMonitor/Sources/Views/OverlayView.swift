@@ -35,6 +35,8 @@ struct OverlayView_Previews: PreviewProvider {
             Session(
                 id: "abc123def456",
                 workingDirectory: "/Users/demo/Projects/my-app",
+                pid: 12345,
+                state: .working,
                 startedAt: Date()
             )
         )
@@ -42,6 +44,8 @@ struct OverlayView_Previews: PreviewProvider {
             Session(
                 id: "xyz789ghi012",
                 workingDirectory: "/Users/demo/Documents/other-project",
+                pid: 67890,
+                state: .waiting,
                 startedAt: Date()
             )
         )

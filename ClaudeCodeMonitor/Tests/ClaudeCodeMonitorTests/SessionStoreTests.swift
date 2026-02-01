@@ -5,17 +5,12 @@ import Foundation
 @Suite("SessionStore Tests")
 @MainActor
 struct SessionStoreTests {
-    @Test("addSession increases count")
-    func addSessionIncreasesCount() {
+    @Test("registerSession increases count")
+    func registerSessionIncreasesCount() {
         let store = SessionStore()
         #expect(store.sessionCount == 0)
 
-        let session = Session(
-            id: "test-123",
-            workingDirectory: "/test/path",
-            startedAt: Date()
-        )
-        store.addSession(session)
+        store.registerSession(id: "test-123", workingDirectory: "/test/path")
 
         #expect(store.sessionCount == 1)
         #expect(store.sessions.first?.id == "test-123")
@@ -24,12 +19,7 @@ struct SessionStoreTests {
     @Test("removeSession decreases count")
     func removeSessionDecreasesCount() {
         let store = SessionStore()
-        let session = Session(
-            id: "test-123",
-            workingDirectory: "/test/path",
-            startedAt: Date()
-        )
-        store.addSession(session)
+        store.registerSession(id: "test-123", workingDirectory: "/test/path")
         #expect(store.sessionCount == 1)
 
         store.removeSession(id: "test-123")
@@ -39,19 +29,9 @@ struct SessionStoreTests {
     @Test("duplicate session is ignored")
     func duplicateSessionIgnored() {
         let store = SessionStore()
-        let session1 = Session(
-            id: "test-123",
-            workingDirectory: "/test/path",
-            startedAt: Date()
-        )
-        let session2 = Session(
-            id: "test-123",
-            workingDirectory: "/different/path",
-            startedAt: Date()
-        )
 
-        store.addSession(session1)
-        store.addSession(session2)
+        store.registerSession(id: "test-123", workingDirectory: "/test/path")
+        store.registerSession(id: "test-123", workingDirectory: "/different/path")
 
         #expect(store.sessionCount == 1)
         #expect(store.sessions.first?.workingDirectory == "/test/path")
@@ -60,12 +40,7 @@ struct SessionStoreTests {
     @Test("removeSession with invalid id is no-op")
     func removeInvalidIdIsNoOp() {
         let store = SessionStore()
-        let session = Session(
-            id: "test-123",
-            workingDirectory: "/test/path",
-            startedAt: Date()
-        )
-        store.addSession(session)
+        store.registerSession(id: "test-123", workingDirectory: "/test/path")
 
         store.removeSession(id: "nonexistent")
 
@@ -75,13 +50,10 @@ struct SessionStoreTests {
     @Test("multiple sessions can be managed")
     func multipleSessionsManaged() {
         let store = SessionStore()
-        let session1 = Session(id: "session-1", workingDirectory: "/path1", startedAt: Date())
-        let session2 = Session(id: "session-2", workingDirectory: "/path2", startedAt: Date())
-        let session3 = Session(id: "session-3", workingDirectory: "/path3", startedAt: Date())
 
-        store.addSession(session1)
-        store.addSession(session2)
-        store.addSession(session3)
+        store.registerSession(id: "session-1", workingDirectory: "/path1")
+        store.registerSession(id: "session-2", workingDirectory: "/path2")
+        store.registerSession(id: "session-3", workingDirectory: "/path3")
 
         #expect(store.sessionCount == 3)
 
@@ -91,5 +63,52 @@ struct SessionStoreTests {
         #expect(store.sessions.contains { $0.id == "session-1" })
         #expect(!store.sessions.contains { $0.id == "session-2" })
         #expect(store.sessions.contains { $0.id == "session-3" })
+    }
+
+    @Test("setBusy updates session state")
+    func setBusyUpdatesState() {
+        let store = SessionStore()
+        store.registerSession(id: "test-123", workingDirectory: "/test/path")
+
+        store.setBusy(id: "test-123")
+
+        #expect(store.sessions.first?.state == .working)
+        #expect(store.sessions.first?.lastIdleAt == nil)
+    }
+
+    @Test("setIdle updates session state")
+    func setIdleUpdatesState() {
+        let store = SessionStore()
+        store.registerSession(id: "test-123", workingDirectory: "/test/path")
+        store.setBusy(id: "test-123")
+
+        store.setIdle(id: "test-123")
+
+        #expect(store.sessions.first?.state == .waiting)
+        #expect(store.sessions.first?.lastIdleAt != nil)
+    }
+
+    @Test("setBusy auto-registers unknown session")
+    func setBusyAutoRegisters() {
+        let store = SessionStore()
+        #expect(store.sessionCount == 0)
+
+        store.setBusy(id: "unknown-session", workingDirectory: "/auto/path")
+
+        #expect(store.sessionCount == 1)
+        #expect(store.sessions.first?.id == "unknown-session")
+        #expect(store.sessions.first?.state == .working)
+    }
+
+    @Test("setIdle auto-registers unknown session")
+    func setIdleAutoRegisters() {
+        let store = SessionStore()
+        #expect(store.sessionCount == 0)
+
+        store.setIdle(id: "unknown-session", workingDirectory: "/auto/path")
+
+        #expect(store.sessionCount == 1)
+        #expect(store.sessions.first?.id == "unknown-session")
+        #expect(store.sessions.first?.state == .waiting)
     }
 }

@@ -5,7 +5,6 @@ import SwiftUI
 class AppDelegate: NSObject, NSApplicationDelegate {
     var overlayWindow: NSWindow!
     let sessionStore = SessionStore()
-    var processMonitor: ProcessMonitor?
     var httpServer: HTTPServer?
     var globalEventMonitor: Any?
     var localEventMonitor: Any?
@@ -14,8 +13,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         setupOverlayWindow()
         setupEventMonitor()
-        startProcessMonitor()
         startHTTPServer()
+        sessionStore.startIdleCleanup()
         setupSignalHandler()
     }
 
@@ -48,21 +47,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Attempt graceful cleanup
         Task {
-            await processMonitor?.stop()
+            sessionStore.stopIdleCleanup()
             await httpServer?.stop()
             await MainActor.run {
                 NSApp.reply(toApplicationShouldTerminate: true)
             }
         }
         return .terminateLater
-    }
-
-    private func startProcessMonitor() {
-        processMonitor = ProcessMonitor(sessionStore: sessionStore)
-        Task {
-            await processMonitor?.start()
-            print("Process monitor started")
-        }
     }
 
     private func startHTTPServer() {

@@ -22,19 +22,19 @@ struct HookEventParsingTests {
         #expect(event.timestamp == nil)
     }
 
-    @Test("parses valid Stop payload")
-    func parsesStop() throws {
+    @Test("parses valid SessionEnd payload")
+    func parsesSessionEnd() throws {
         let json = """
         {
             "session_id": "abc-123",
-            "event_type": "Stop"
+            "event_type": "SessionEnd"
         }
         """.data(using: .utf8)!
 
         let event = try JSONDecoder().decode(HookEvent.self, from: json)
 
         #expect(event.sessionId == "abc-123")
-        #expect(event.eventType == .stop)
+        #expect(event.eventType == .sessionEnd)
         #expect(event.workingDirectory == nil)
     }
 

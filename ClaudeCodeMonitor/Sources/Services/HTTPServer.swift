@@ -6,13 +6,27 @@ struct EventResponse: Content {
     static let ok = EventResponse(status: "ok")
 }
 
+struct SessionInfo: Content {
+    let id: String
+    let state: String
+    let workingDirectory: String
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case state
+        case workingDirectory = "working_directory"
+    }
+}
+
 struct HealthResponse: Content {
     let status: String
     let activeSessionCount: Int
+    let sessions: [SessionInfo]
 
     enum CodingKeys: String, CodingKey {
         case status
         case activeSessionCount = "active_sessions"
+        case sessions
     }
 }
 
@@ -63,21 +77,29 @@ final class HTTPServer {
 
             switch event.eventType {
             case .sessionStart:
-                let session = Session(
+                // Register new session in idle state
+                await store.registerSession(
                     id: event.sessionId,
-                    workingDirectory: event.workingDirectory ?? "",
-                    pid: 0,  // HTTP events don't have PID, ProcessMonitor handles this
-                    state: .working,  // Default to working when session starts
-                    startedAt: event.timestamp ?? Date()
+                    workingDirectory: event.workingDirectory ?? ""
                 )
-                await store.addSession(session)
 
-            case .stop:
+            case .sessionEnd:
+                // Remove session
                 await store.removeSession(id: event.sessionId)
 
-            case .stateChange:
-                let newState: SessionState = event.state == .working ? .working : .waiting
-                await store.updateSessionState(id: event.sessionId, state: newState)
+            case .notification:
+                // Claude finished work, waiting for user - set idle
+                await store.setIdle(
+                    id: event.sessionId,
+                    workingDirectory: event.workingDirectory
+                )
+
+            case .userPromptSubmit, .postToolUse:
+                // User submitted prompt or tool used - Claude is working
+                await store.setBusy(
+                    id: event.sessionId,
+                    workingDirectory: event.workingDirectory
+                )
             }
 
             let response = Response(status: .ok)
@@ -86,8 +108,19 @@ final class HTTPServer {
         }
 
         app.get("health") { req async throws -> HealthResponse in
-            let count = await store.sessionCount
-            return HealthResponse(status: "healthy", activeSessionCount: count)
+            let sessions = await store.sessions
+            let sessionInfos = sessions.map { session in
+                SessionInfo(
+                    id: session.displayId,
+                    state: session.state == .working ? "busy" : "idle",
+                    workingDirectory: session.workingDirectory
+                )
+            }
+            return HealthResponse(
+                status: "healthy",
+                activeSessionCount: sessions.count,
+                sessions: sessionInfos
+            )
         }
     }
 }

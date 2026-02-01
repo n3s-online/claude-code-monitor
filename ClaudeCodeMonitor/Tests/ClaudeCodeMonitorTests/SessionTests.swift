@@ -9,7 +9,9 @@ struct SessionTests {
         let session = Session(
             id: "abc12345678def",
             workingDirectory: "/Users/test/project",
-            startedAt: Date()
+            state: .waiting,
+            startedAt: Date(),
+            lastIdleAt: Date()
         )
         #expect(session.displayId == "abc12345...")
     }
@@ -19,7 +21,9 @@ struct SessionTests {
         let session = Session(
             id: "abc",
             workingDirectory: "/Users/test/project",
-            startedAt: Date()
+            state: .waiting,
+            startedAt: Date(),
+            lastIdleAt: Date()
         )
         #expect(session.displayId == "abc...")
     }
@@ -29,7 +33,9 @@ struct SessionTests {
         let session = Session(
             id: "test-id",
             workingDirectory: "/Users/test/my-project",
-            startedAt: Date()
+            state: .waiting,
+            startedAt: Date(),
+            lastIdleAt: Date()
         )
         #expect(session.displayDirectory == "my-project")
     }
@@ -39,7 +45,9 @@ struct SessionTests {
         let session = Session(
             id: "test-id",
             workingDirectory: "/Users/test/my-project/",
-            startedAt: Date()
+            state: .waiting,
+            startedAt: Date(),
+            lastIdleAt: Date()
         )
         #expect(session.displayDirectory == "my-project")
     }
@@ -49,7 +57,9 @@ struct SessionTests {
         let session = Session(
             id: "test-id",
             workingDirectory: "/",
-            startedAt: Date()
+            state: .waiting,
+            startedAt: Date(),
+            lastIdleAt: Date()
         )
         #expect(session.displayDirectory == "/")
     }
@@ -59,7 +69,9 @@ struct SessionTests {
         let session = Session(
             id: "test-id",
             workingDirectory: "",
-            startedAt: Date()
+            state: .waiting,
+            startedAt: Date(),
+            lastIdleAt: Date()
         )
         #expect(session.displayDirectory == "")
     }
@@ -67,9 +79,9 @@ struct SessionTests {
     @Test("Session equality")
     func sessionEquality() {
         let date = Date()
-        let session1 = Session(id: "123", workingDirectory: "/test", startedAt: date)
-        let session2 = Session(id: "123", workingDirectory: "/test", startedAt: date)
-        let session3 = Session(id: "456", workingDirectory: "/test", startedAt: date)
+        let session1 = Session(id: "123", workingDirectory: "/test", state: .waiting, startedAt: date, lastIdleAt: date)
+        let session2 = Session(id: "123", workingDirectory: "/test", state: .waiting, startedAt: date, lastIdleAt: date)
+        let session3 = Session(id: "456", workingDirectory: "/test", state: .waiting, startedAt: date, lastIdleAt: date)
 
         #expect(session1 == session2)
         #expect(session1 != session3)

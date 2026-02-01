@@ -8,9 +8,9 @@ enum SessionState: Equatable, Sendable {
 struct Session: Identifiable, Equatable, Sendable {
     let id: String
     let workingDirectory: String
-    let pid: Int32
     var state: SessionState
     let startedAt: Date
+    var lastIdleAt: Date?  // nil when busy, set when idle
 
     var displayId: String {
         String(id.prefix(8)) + "..."

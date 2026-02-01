@@ -31,24 +31,8 @@ struct OverlayView_Previews: PreviewProvider {
 
     static func makePopulatedStore() -> SessionStore {
         let store = SessionStore()
-        store.addSession(
-            Session(
-                id: "abc123def456",
-                workingDirectory: "/Users/demo/Projects/my-app",
-                pid: 12345,
-                state: .working,
-                startedAt: Date()
-            )
-        )
-        store.addSession(
-            Session(
-                id: "xyz789ghi012",
-                workingDirectory: "/Users/demo/Documents/other-project",
-                pid: 67890,
-                state: .waiting,
-                startedAt: Date()
-            )
-        )
+        store.setBusy(id: "abc123def456", workingDirectory: "/Users/demo/Projects/my-app")
+        store.setIdle(id: "xyz789ghi012", workingDirectory: "/Users/demo/Documents/other-project")
         return store
     }
 }

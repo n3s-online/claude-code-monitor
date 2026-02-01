@@ -47,18 +47,17 @@ struct HTTPServerTests {
         }
     }
 
-    @Test("POST /event removes session on Stop")
+    @Test("POST /event removes session on SessionEnd")
     func removeSession() async throws {
         let store = await SessionStore()
-        let session = Session(id: "test-remove", workingDirectory: "/tmp", startedAt: Date())
-        await store.addSession(session)
+        await store.registerSession(id: "test-remove", workingDirectory: "/tmp")
         let initialCount = await store.sessionCount
         #expect(initialCount == 1)
 
         try await withApp(store: store) { app in
             let payload = HookEvent(
                 sessionId: "test-remove",
-                eventType: .stop,
+                eventType: .sessionEnd,
                 workingDirectory: nil,
                 timestamp: nil
             )
@@ -92,8 +91,8 @@ struct HTTPServerTests {
     @Test("health check reflects session count")
     func healthCheckWithSessions() async throws {
         let store = await SessionStore()
-        await store.addSession(Session(id: "s1", workingDirectory: "/a", startedAt: Date()))
-        await store.addSession(Session(id: "s2", workingDirectory: "/b", startedAt: Date()))
+        await store.registerSession(id: "s1", workingDirectory: "/a")
+        await store.registerSession(id: "s2", workingDirectory: "/b")
 
         try await withApp(store: store) { app in
             try await app.testing().test(.GET, "health") { response in

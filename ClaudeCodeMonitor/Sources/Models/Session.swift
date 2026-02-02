@@ -11,6 +11,7 @@ struct Session: Identifiable, Equatable, Sendable {
     var state: SessionState
     let startedAt: Date
     var lastIdleAt: Date?  // nil when busy, set when idle
+    var pid: Int32? = nil  // Process ID of Claude Code instance (nil = untracked)
 
     var displayId: String {
         String(id.prefix(8)) + "..."
@@ -20,5 +21,10 @@ struct Session: Identifiable, Equatable, Sendable {
         guard !workingDirectory.isEmpty else { return "" }
         let url = URL(fileURLWithPath: workingDirectory)
         return url.lastPathComponent
+    }
+
+    /// Whether this session is tracked for process-based cleanup
+    var isTracked: Bool {
+        pid != nil
     }
 }

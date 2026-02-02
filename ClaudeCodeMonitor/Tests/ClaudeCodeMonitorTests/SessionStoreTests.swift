@@ -111,4 +111,158 @@ struct SessionStoreTests {
         #expect(store.sessions.first?.id == "unknown-session")
         #expect(store.sessions.first?.state == .waiting)
     }
+
+    // MARK: - PID Tracking Tests
+
+    @Test("registerSession stores PID")
+    func registerSessionWithPid() {
+        let store = SessionStore()
+        store.registerSession(id: "test-123", workingDirectory: "/test/path", pid: 12345)
+
+        #expect(store.sessions.first?.pid == 12345)
+        #expect(store.sessions.first?.isTracked == true)
+    }
+
+    @Test("registerSession without PID creates untracked session")
+    func registerSessionWithoutPid() {
+        let store = SessionStore()
+        store.registerSession(id: "test-123", workingDirectory: "/test/path")
+
+        #expect(store.sessions.first?.pid == nil)
+        #expect(store.sessions.first?.isTracked == false)
+    }
+
+    @Test("registerSession does not overwrite existing PID")
+    func registerSessionPreservesPid() {
+        let store = SessionStore()
+        store.registerSession(id: "test-123", workingDirectory: "/test/path", pid: 12345)
+        store.registerSession(id: "test-123", workingDirectory: "/different/path", pid: 99999)
+
+        #expect(store.sessions.first?.pid == 12345)  // Original PID preserved
+    }
+
+    @Test("registerSession can upgrade untracked session to tracked")
+    func registerSessionUpgradesPid() {
+        let store = SessionStore()
+        store.registerSession(id: "test-123", workingDirectory: "/test/path", pid: nil)
+        #expect(store.sessions.first?.pid == nil)
+
+        store.registerSession(id: "test-123", workingDirectory: "/test/path", pid: 12345)
+        #expect(store.sessions.first?.pid == 12345)
+    }
+
+    @Test("setBusy stores PID")
+    func setBusyWithPid() {
+        let store = SessionStore()
+        store.setBusy(id: "test-123", workingDirectory: "/test/path", pid: 12345)
+
+        #expect(store.sessions.first?.pid == 12345)
+    }
+
+    @Test("setBusy preserves existing PID")
+    func setBusyPreservesPid() {
+        let store = SessionStore()
+        store.registerSession(id: "test-123", workingDirectory: "/test/path", pid: 12345)
+        store.setBusy(id: "test-123", workingDirectory: "/test/path", pid: 99999)
+
+        #expect(store.sessions.first?.pid == 12345)  // Original preserved
+    }
+
+    @Test("setIdle stores PID")
+    func setIdleWithPid() {
+        let store = SessionStore()
+        store.setIdle(id: "test-123", workingDirectory: "/test/path", pid: 12345)
+
+        #expect(store.sessions.first?.pid == 12345)
+    }
+
+    @Test("setIdle preserves existing PID")
+    func setIdlePreservesPid() {
+        let store = SessionStore()
+        store.registerSession(id: "test-123", workingDirectory: "/test/path", pid: 12345)
+        store.setIdle(id: "test-123", workingDirectory: "/test/path", pid: 99999)
+
+        #expect(store.sessions.first?.pid == 12345)  // Original preserved
+    }
+
+    // MARK: - Process Cleanup Tests
+
+    @Test("isProcessAlive returns true for current process")
+    func isProcessAliveForCurrentProcess() {
+        let store = SessionStore()
+        let currentPid = getpid()
+
+        #expect(store.isProcessAlive(currentPid) == true)
+    }
+
+    @Test("isProcessAlive returns false for non-existent process")
+    func isProcessAliveForDeadProcess() {
+        let store = SessionStore()
+        // PID 99999999 is unlikely to exist
+        let deadPid: Int32 = 99999999
+
+        #expect(store.isProcessAlive(deadPid) == false)
+    }
+
+    @Test("cleanupDeadProcesses removes sessions with dead PIDs")
+    func cleanupRemovesDeadProcessSessions() {
+        let store = SessionStore()
+        // Use a PID that definitely doesn't exist
+        let deadPid: Int32 = 99999999
+        store.registerSession(id: "dead-session", workingDirectory: "/test/path", pid: deadPid)
+
+        #expect(store.sessionCount == 1)
+
+        store.cleanupDeadProcesses()
+
+        #expect(store.sessionCount == 0)
+    }
+
+    @Test("cleanupDeadProcesses preserves sessions with live PIDs")
+    func cleanupPreservesLiveProcessSessions() {
+        let store = SessionStore()
+        let currentPid = getpid()
+        store.registerSession(id: "live-session", workingDirectory: "/test/path", pid: currentPid)
+
+        #expect(store.sessionCount == 1)
+
+        store.cleanupDeadProcesses()
+
+        #expect(store.sessionCount == 1)
+        #expect(store.sessions.first?.id == "live-session")
+    }
+
+    @Test("cleanupDeadProcesses preserves untracked sessions")
+    func cleanupPreservesUntrackedSessions() {
+        let store = SessionStore()
+        store.registerSession(id: "untracked-session", workingDirectory: "/test/path", pid: nil)
+
+        #expect(store.sessionCount == 1)
+        #expect(store.sessions.first?.isTracked == false)
+
+        store.cleanupDeadProcesses()
+
+        #expect(store.sessionCount == 1)
+        #expect(store.sessions.first?.id == "untracked-session")
+    }
+
+    @Test("cleanupDeadProcesses handles mixed session types")
+    func cleanupHandlesMixedSessions() {
+        let store = SessionStore()
+        let currentPid = getpid()
+        let deadPid: Int32 = 99999999
+
+        store.registerSession(id: "live-session", workingDirectory: "/path1", pid: currentPid)
+        store.registerSession(id: "dead-session", workingDirectory: "/path2", pid: deadPid)
+        store.registerSession(id: "untracked-session", workingDirectory: "/path3", pid: nil)
+
+        #expect(store.sessionCount == 3)
+
+        store.cleanupDeadProcesses()
+
+        #expect(store.sessionCount == 2)
+        #expect(store.sessions.contains { $0.id == "live-session" })
+        #expect(!store.sessions.contains { $0.id == "dead-session" })
+        #expect(store.sessions.contains { $0.id == "untracked-session" })
+    }
 }

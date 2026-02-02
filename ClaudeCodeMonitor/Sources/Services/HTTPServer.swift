@@ -10,11 +10,15 @@ struct SessionInfo: Content {
     let id: String
     let state: String
     let workingDirectory: String
+    let pid: Int32?
+    let isTracked: Bool
 
     enum CodingKeys: String, CodingKey {
         case id
         case state
         case workingDirectory = "working_directory"
+        case pid
+        case isTracked = "is_tracked"
     }
 }
 
@@ -80,7 +84,8 @@ final class HTTPServer {
                 // Register new session in idle state
                 await store.registerSession(
                     id: event.sessionId,
-                    workingDirectory: event.workingDirectory ?? ""
+                    workingDirectory: event.workingDirectory ?? "",
+                    pid: event.pid
                 )
 
             case .sessionEnd:
@@ -91,14 +96,16 @@ final class HTTPServer {
                 // Claude finished work, waiting for user - set idle
                 await store.setIdle(
                     id: event.sessionId,
-                    workingDirectory: event.workingDirectory
+                    workingDirectory: event.workingDirectory,
+                    pid: event.pid
                 )
 
             case .userPromptSubmit, .postToolUse:
                 // User submitted prompt or tool used - Claude is working
                 await store.setBusy(
                     id: event.sessionId,
-                    workingDirectory: event.workingDirectory
+                    workingDirectory: event.workingDirectory,
+                    pid: event.pid
                 )
             }
 
@@ -113,7 +120,9 @@ final class HTTPServer {
                 SessionInfo(
                     id: session.displayId,
                     state: session.state == .working ? "busy" : "idle",
-                    workingDirectory: session.workingDirectory
+                    workingDirectory: session.workingDirectory,
+                    pid: session.pid,
+                    isTracked: session.isTracked
                 )
             }
             return HealthResponse(

@@ -106,4 +106,54 @@ struct HookEventParsingTests {
             _ = try JSONDecoder().decode(HookEvent.self, from: json)
         }
     }
+
+    @Test("parses payload with PID")
+    func parsesWithPid() throws {
+        let json = """
+        {
+            "session_id": "abc-123",
+            "event_type": "SessionStart",
+            "working_directory": "/tmp",
+            "pid": 12345
+        }
+        """.data(using: .utf8)!
+
+        let event = try JSONDecoder().decode(HookEvent.self, from: json)
+
+        #expect(event.sessionId == "abc-123")
+        #expect(event.pid == 12345)
+    }
+
+    @Test("parses payload without PID")
+    func parsesWithoutPid() throws {
+        let json = """
+        {
+            "session_id": "abc-123",
+            "event_type": "SessionStart",
+            "working_directory": "/tmp"
+        }
+        """.data(using: .utf8)!
+
+        let event = try JSONDecoder().decode(HookEvent.self, from: json)
+
+        #expect(event.sessionId == "abc-123")
+        #expect(event.pid == nil)
+    }
+
+    @Test("parses payload with null PID")
+    func parsesWithNullPid() throws {
+        let json = """
+        {
+            "session_id": "abc-123",
+            "event_type": "SessionStart",
+            "working_directory": "/tmp",
+            "pid": null
+        }
+        """.data(using: .utf8)!
+
+        let event = try JSONDecoder().decode(HookEvent.self, from: json)
+
+        #expect(event.sessionId == "abc-123")
+        #expect(event.pid == nil)
+    }
 }

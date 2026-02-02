@@ -6,6 +6,7 @@ struct HookEvent: Content, Sendable {
     let eventType: EventType
     let workingDirectory: String?
     let timestamp: Date?
+    let pid: Int32?  // Process ID of Claude Code instance
 
     enum EventType: String, Codable, Sendable {
         case sessionStart = "SessionStart"
@@ -20,5 +21,6 @@ struct HookEvent: Content, Sendable {
         case eventType = "event_type"
         case workingDirectory = "working_directory"
         case timestamp
+        case pid
     }
 }

@@ -28,7 +28,8 @@ struct HTTPServerTests {
                 sessionId: "test-session-123",
                 eventType: .sessionStart,
                 workingDirectory: "/tmp/test",
-                timestamp: nil
+                timestamp: nil,
+                pid: nil
             )
 
             try await app.testing().test(.POST, "event", beforeRequest: { req in
@@ -59,7 +60,8 @@ struct HTTPServerTests {
                 sessionId: "test-remove",
                 eventType: .sessionEnd,
                 workingDirectory: nil,
-                timestamp: nil
+                timestamp: nil,
+                pid: nil
             )
 
             try await app.testing().test(.POST, "event", beforeRequest: { req in
@@ -100,6 +102,56 @@ struct HTTPServerTests {
                 let health = try response.content.decode(HealthResponse.self)
                 #expect(health.activeSessionCount == 2)
             }
+        }
+    }
+
+    // MARK: - PID Tracking Tests
+
+    @Test("POST /event with PID stores it")
+    func addSessionWithPid() async throws {
+        let store = await SessionStore()
+        try await withApp(store: store) { app in
+            let payload = HookEvent(
+                sessionId: "test-session-123",
+                eventType: .sessionStart,
+                workingDirectory: "/tmp/test",
+                timestamp: nil,
+                pid: 12345
+            )
+
+            try await app.testing().test(.POST, "event", beforeRequest: { req in
+                try req.content.encode(payload)
+            }) { response in
+                #expect(response.status == .ok)
+            }
+
+            let sessions = await store.sessions
+            #expect(sessions.first?.pid == 12345)
+            #expect(sessions.first?.isTracked == true)
+        }
+    }
+
+    @Test("POST /event without PID creates untracked session")
+    func addSessionWithoutPid() async throws {
+        let store = await SessionStore()
+        try await withApp(store: store) { app in
+            let payload = HookEvent(
+                sessionId: "test-session-123",
+                eventType: .sessionStart,
+                workingDirectory: "/tmp/test",
+                timestamp: nil,
+                pid: nil
+            )
+
+            try await app.testing().test(.POST, "event", beforeRequest: { req in
+                try req.content.encode(payload)
+            }) { response in
+                #expect(response.status == .ok)
+            }
+
+            let sessions = await store.sessions
+            #expect(sessions.first?.pid == nil)
+            #expect(sessions.first?.isTracked == false)
         }
     }
 

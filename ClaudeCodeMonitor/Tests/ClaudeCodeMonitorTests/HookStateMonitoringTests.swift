@@ -394,7 +394,8 @@ struct HookStateMonitoringTests {
                     sessionId: "http-session-1",
                     eventType: .sessionStart,
                     workingDirectory: "/http/project",
-                    timestamp: nil
+                    timestamp: nil,
+                    pid: nil
                 )
 
                 try await app.testing().test(.POST, "event", beforeRequest: { req in
@@ -420,7 +421,8 @@ struct HookStateMonitoringTests {
                     sessionId: "http-session-2",
                     eventType: .notification,
                     workingDirectory: nil,
-                    timestamp: nil
+                    timestamp: nil,
+                    pid: nil
                 )
 
                 try await app.testing().test(.POST, "event", beforeRequest: { req in
@@ -444,7 +446,8 @@ struct HookStateMonitoringTests {
                     sessionId: "http-session-3",
                     eventType: .userPromptSubmit,
                     workingDirectory: nil,
-                    timestamp: nil
+                    timestamp: nil,
+                    pid: nil
                 )
 
                 try await app.testing().test(.POST, "event", beforeRequest: { req in
@@ -469,7 +472,8 @@ struct HookStateMonitoringTests {
                     sessionId: "http-session-4",
                     eventType: .postToolUse,
                     workingDirectory: nil,
-                    timestamp: nil
+                    timestamp: nil,
+                    pid: nil
                 )
 
                 try await app.testing().test(.POST, "event", beforeRequest: { req in
@@ -495,7 +499,8 @@ struct HookStateMonitoringTests {
                     sessionId: "http-session-5",
                     eventType: .sessionEnd,
                     workingDirectory: nil,
-                    timestamp: nil
+                    timestamp: nil,
+                    pid: nil
                 )
 
                 try await app.testing().test(.POST, "event", beforeRequest: { req in
@@ -520,7 +525,8 @@ struct HookStateMonitoringTests {
                         sessionId: "lifecycle-http",
                         eventType: .sessionStart,
                         workingDirectory: "/project",
-                        timestamp: nil
+                        timestamp: nil,
+                    pid: nil
                     ))
                 }) { response in
                     #expect(response.status == .ok)
@@ -535,7 +541,8 @@ struct HookStateMonitoringTests {
                         sessionId: "lifecycle-http",
                         eventType: .userPromptSubmit,
                         workingDirectory: nil,
-                        timestamp: nil
+                        timestamp: nil,
+                    pid: nil
                     ))
                 }) { _ in }
 
@@ -548,7 +555,8 @@ struct HookStateMonitoringTests {
                         sessionId: "lifecycle-http",
                         eventType: .postToolUse,
                         workingDirectory: nil,
-                        timestamp: nil
+                        timestamp: nil,
+                    pid: nil
                     ))
                 }) { _ in }
 
@@ -561,7 +569,8 @@ struct HookStateMonitoringTests {
                         sessionId: "lifecycle-http",
                         eventType: .notification,
                         workingDirectory: nil,
-                        timestamp: nil
+                        timestamp: nil,
+                    pid: nil
                     ))
                 }) { _ in }
 
@@ -574,7 +583,8 @@ struct HookStateMonitoringTests {
                         sessionId: "lifecycle-http",
                         eventType: .sessionEnd,
                         workingDirectory: nil,
-                        timestamp: nil
+                        timestamp: nil,
+                    pid: nil
                     ))
                 }) { _ in }
 
@@ -641,7 +651,8 @@ struct HookStateMonitoringTests {
                     sessionId: "",
                     eventType: .sessionStart,
                     workingDirectory: "/path",
-                    timestamp: nil
+                    timestamp: nil,
+                    pid: nil
                 )
 
                 try await app.testing().test(.POST, "event", beforeRequest: { req in

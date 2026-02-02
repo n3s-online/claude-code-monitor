@@ -86,4 +86,43 @@ struct SessionTests {
         #expect(session1 == session2)
         #expect(session1 != session3)
     }
+
+    @Test("isTracked returns true when PID is set")
+    func isTrackedWithPid() {
+        let session = Session(
+            id: "test-id",
+            workingDirectory: "/test",
+            state: .waiting,
+            startedAt: Date(),
+            lastIdleAt: Date(),
+            pid: 12345
+        )
+        #expect(session.isTracked == true)
+        #expect(session.pid == 12345)
+    }
+
+    @Test("isTracked returns false when PID is nil")
+    func isTrackedWithoutPid() {
+        let session = Session(
+            id: "test-id",
+            workingDirectory: "/test",
+            state: .waiting,
+            startedAt: Date(),
+            lastIdleAt: Date(),
+            pid: nil
+        )
+        #expect(session.isTracked == false)
+        #expect(session.pid == nil)
+    }
+
+    @Test("Session equality includes PID")
+    func sessionEqualityWithPid() {
+        let date = Date()
+        let session1 = Session(id: "123", workingDirectory: "/test", state: .waiting, startedAt: date, lastIdleAt: date, pid: 100)
+        let session2 = Session(id: "123", workingDirectory: "/test", state: .waiting, startedAt: date, lastIdleAt: date, pid: 100)
+        let session3 = Session(id: "123", workingDirectory: "/test", state: .waiting, startedAt: date, lastIdleAt: date, pid: 200)
+
+        #expect(session1 == session2)
+        #expect(session1 != session3)
+    }
 }

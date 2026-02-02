@@ -17,7 +17,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         setupOverlayWindow()
         setupEventMonitor()
         startHTTPServer()
-        sessionStore.startIdleCleanup()
+        sessionStore.startProcessCleanup()
         setupSignalHandler()
     }
 
@@ -50,7 +50,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Attempt graceful cleanup
         Task {
-            sessionStore.stopIdleCleanup()
+            sessionStore.stopProcessCleanup()
             await httpServer?.stop()
             await MainActor.run {
                 NSApp.reply(toApplicationShouldTerminate: true)

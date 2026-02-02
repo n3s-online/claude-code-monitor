@@ -44,16 +44,16 @@ No code signing required for local dev. HTTP server runs on `localhost:7779`.
 
 ## Hook Configuration
 
-Add to `~/.claude/settings.json` to send events:
+Add to `~/.claude/settings.json` to send events. Hooks receive context via JSON on stdin, so we use `jq` to extract `session_id` and pipe to curl. Errors are suppressed so the monitor can be stopped without cluttering CC sessions:
 
 ```json
 {
   "hooks": {
-    "SessionStart": [{"type": "command", "command": "curl -s -X POST http://localhost:7779/event -H 'Content-Type: application/json' -d '{\"session_id\": \"$CLAUDE_SESSION_ID\", \"event_type\": \"SessionStart\", \"working_directory\": \"'$(pwd)'\"}'"}],
-    "Notification": [{"type": "command", "command": "curl -s -X POST http://localhost:7779/event -H 'Content-Type: application/json' -d '{\"session_id\": \"$CLAUDE_SESSION_ID\", \"event_type\": \"Notification\"}'"}],
-    "UserPromptSubmit": [{"type": "command", "command": "curl -s -X POST http://localhost:7779/event -H 'Content-Type: application/json' -d '{\"session_id\": \"$CLAUDE_SESSION_ID\", \"event_type\": \"UserPromptSubmit\"}'"}],
-    "PostToolUse": [{"type": "command", "command": "curl -s -X POST http://localhost:7779/event -H 'Content-Type: application/json' -d '{\"session_id\": \"$CLAUDE_SESSION_ID\", \"event_type\": \"PostToolUse\"}'"}],
-    "Stop": [{"type": "command", "command": "curl -s -X POST http://localhost:7779/event -H 'Content-Type: application/json' -d '{\"session_id\": \"$CLAUDE_SESSION_ID\", \"event_type\": \"SessionEnd\"}'"}]
+    "SessionStart": [{"matcher": "", "hooks": [{"type": "command", "command": "jq -c '{session_id: .session_id, event_type: \"SessionStart\", working_directory: .cwd}' | curl -s -X POST http://localhost:7779/event -H 'Content-Type: application/json' -d @- 2>/dev/null || true"}]}],
+    "Notification": [{"matcher": "", "hooks": [{"type": "command", "command": "jq -c '{session_id: .session_id, event_type: \"Notification\", working_directory: .cwd}' | curl -s -X POST http://localhost:7779/event -H 'Content-Type: application/json' -d @- 2>/dev/null || true"}]}],
+    "UserPromptSubmit": [{"matcher": "", "hooks": [{"type": "command", "command": "jq -c '{session_id: .session_id, event_type: \"UserPromptSubmit\", working_directory: .cwd}' | curl -s -X POST http://localhost:7779/event -H 'Content-Type: application/json' -d @- 2>/dev/null || true"}]}],
+    "PostToolUse": [{"matcher": "", "hooks": [{"type": "command", "command": "jq -c '{session_id: .session_id, event_type: \"PostToolUse\", working_directory: .cwd}' | curl -s -X POST http://localhost:7779/event -H 'Content-Type: application/json' -d @- 2>/dev/null || true"}]}],
+    "Stop": [{"matcher": "", "hooks": [{"type": "command", "command": "jq -c '{session_id: .session_id, event_type: \"SessionEnd\", working_directory: .cwd}' | curl -s -X POST http://localhost:7779/event -H 'Content-Type: application/json' -d @- 2>/dev/null || true"}]}]
   }
 }
 ```

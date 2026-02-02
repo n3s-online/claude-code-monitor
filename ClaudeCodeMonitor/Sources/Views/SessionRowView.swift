@@ -6,11 +6,8 @@ struct SessionRowView: View {
     var body: some View {
         HStack(spacing: 8) {
             PulsingDotView(state: session.state)
-            Text(session.displayId)
-                .font(.system(.body, design: .monospaced))
             Text(session.displayDirectory)
                 .font(.system(.body, design: .monospaced))
-                .foregroundColor(.secondary)
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 4)

@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import SwiftUI
 
 @MainActor
@@ -9,6 +10,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var globalEventMonitor: Any?
     var localEventMonitor: Any?
     var signalSource: DispatchSourceSignal?
+    var hostingView: NSHostingView<OverlayView>?
+    var sessionsCancellable: AnyCancellable?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         setupOverlayWindow()
@@ -70,12 +73,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func setupOverlayWindow() {
         let screenFrame = NSScreen.main?.frame ?? .zero
-        let windowWidth: CGFloat = 300
-        let windowHeight: CGFloat = 200
-        let origin = CGPoint(x: 20, y: screenFrame.height - windowHeight - 50)
+        let initialWidth: CGFloat = 250
+        let initialHeight: CGFloat = 50
+        let origin = CGPoint(x: 20, y: screenFrame.height - initialHeight - 50)
 
         overlayWindow = NSWindow(
-            contentRect: NSRect(origin: origin, size: CGSize(width: windowWidth, height: windowHeight)),
+            contentRect: NSRect(origin: origin, size: CGSize(width: initialWidth, height: initialHeight)),
             styleMask: [.borderless],
             backing: .buffered,
             defer: false
@@ -97,19 +100,54 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         visualEffectView.layer?.cornerRadius = 8
 
         let overlayView = OverlayView(sessionStore: sessionStore)
-        let hostingView = NSHostingView(rootView: overlayView)
-        hostingView.translatesAutoresizingMaskIntoConstraints = false
-        visualEffectView.addSubview(hostingView)
+        hostingView = NSHostingView(rootView: overlayView)
+        hostingView!.translatesAutoresizingMaskIntoConstraints = false
+        visualEffectView.addSubview(hostingView!)
 
         NSLayoutConstraint.activate([
-            hostingView.topAnchor.constraint(equalTo: visualEffectView.topAnchor),
-            hostingView.leadingAnchor.constraint(equalTo: visualEffectView.leadingAnchor),
-            hostingView.trailingAnchor.constraint(equalTo: visualEffectView.trailingAnchor),
-            hostingView.bottomAnchor.constraint(equalTo: visualEffectView.bottomAnchor)
+            hostingView!.topAnchor.constraint(equalTo: visualEffectView.topAnchor),
+            hostingView!.leadingAnchor.constraint(equalTo: visualEffectView.leadingAnchor),
+            hostingView!.trailingAnchor.constraint(equalTo: visualEffectView.trailingAnchor),
+            hostingView!.bottomAnchor.constraint(equalTo: visualEffectView.bottomAnchor)
         ])
 
         overlayWindow.contentView = visualEffectView
         overlayWindow.orderFront(nil)
+
+        // Observe session changes and resize window accordingly
+        sessionsCancellable = sessionStore.$sessions
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.resizeWindowToFitContent()
+            }
+
+        // Initial resize
+        resizeWindowToFitContent()
+    }
+
+    private func resizeWindowToFitContent() {
+        guard let hostingView = hostingView else { return }
+        let screenFrame = NSScreen.main?.frame ?? .zero
+
+        // Get the natural size of the SwiftUI content
+        let fittingSize = hostingView.fittingSize
+
+        // Apply constraints: min width 150, max width 400, max height 400
+        let minWidth: CGFloat = 150
+        let maxWidth: CGFloat = 400
+        let maxHeight: CGFloat = 400
+
+        let newWidth = min(max(fittingSize.width, minWidth), maxWidth)
+        let newHeight = min(fittingSize.height, maxHeight)
+
+        // Keep window anchored at top-left (20px from left, 50px from top)
+        let newOrigin = CGPoint(x: 20, y: screenFrame.height - newHeight - 50)
+
+        overlayWindow.setFrame(
+            NSRect(origin: newOrigin, size: CGSize(width: newWidth, height: newHeight)),
+            display: true,
+            animate: false
+        )
     }
 
     private func setupEventMonitor() {

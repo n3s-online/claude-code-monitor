@@ -9,8 +9,13 @@ final class SessionStore: ObservableObject {
     @Published private(set) var sessions: [Session] = []
 
     private var cleanupTask: Task<Void, Never>?
-    private let idleTimeoutInterval: TimeInterval = 4 * 60 * 60  // 4 hours
-    private let cleanupCheckInterval: TimeInterval = 60  // 60 seconds
+    private let idleTimeoutInterval: TimeInterval
+    private let cleanupCheckInterval: TimeInterval
+
+    init(idleTimeoutInterval: TimeInterval = 4 * 60 * 60, cleanupCheckInterval: TimeInterval = 60) {
+        self.idleTimeoutInterval = idleTimeoutInterval
+        self.cleanupCheckInterval = cleanupCheckInterval
+    }
 
     /// Register a new session in idle state
     func registerSession(id: String, workingDirectory: String) {
@@ -119,7 +124,9 @@ final class SessionStore: ObservableObject {
         logger.info("Stopped idle cleanup task")
     }
 
-    private func cleanupIdleSessions() {
+    /// Remove sessions that have been idle longer than the timeout interval.
+    /// This method is internal for testing purposes.
+    func cleanupIdleSessions() {
         let now = Date()
         let sessionsToRemove = sessions.filter { session in
             guard let lastIdleAt = session.lastIdleAt else {
